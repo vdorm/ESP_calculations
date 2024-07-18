@@ -34,7 +34,15 @@ print('Объект unf обеспечивает доступ к API Unifloc VBA
 
 # Установим путь к модели PIPESIM для расчета вязкости, ГС, объемного коэф., плотности
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Model_fluid_properties_analysis.pips")
+# Установим путь к базовой модели для расчета p_dis, в качастве флюида используется нефть (используется модель ESP_P_DIS_oil.pips)
+# Это базовая модель, в которой будем проводить изменения
+PIPESIM_MODEL_PATH_ESP_P_DIS_OIL_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ESP_P_DIS_oil.pips")
+# Установим путь к модели PIPESIM для расчета p_dis, в качастве флюида используется вода (используется модель ESP_P_DIS_water.pips)
+PIPESIM_ESP_P_DIS_WATER_MODEL_PATH  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ESP_P_DIS_water.pips")
  
+# ----------------------------------------------------------------------------------
+# Задание расположения файла с результатами
+# ----------------------------------------------------------------------------------
 current_directory = os.path.dirname(os.path.abspath(__file__))
 results_folder_name = "Results" # Задаем имя папки, в которой будем хранить результаты
 results_directory = os.path.join(current_directory, results_folder_name) # Создаем в директории текущего ".py" файла новую папку, в которой будем хранить результаты
@@ -49,12 +57,22 @@ if os.path.exists(results_directory):
 os.makedirs(results_directory)
 print("Папка для хранения результатов расчета создана.")
 
+
+# ----------------------------------------------------------------------------------
+# Задание основных ключевых слов для записи результатов в словарь
+# ----------------------------------------------------------------------------------
 pipesim_modeling_FA_status = True # проводим ли расчет модели PIPESIM в рамках анализа свойств (Fluid Analysis - FA) или нет
 unifloc_modeling_FA_status = True # проводим ли расчет модели Unifloc в рамках FA или нет
+pipesim_modeling_P_dis_WATER_status = True # проводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: вода - ESP_W) или нет
+unifloc_modeling_P_dis_WATER_status = True # проводим ли расчет модели Unifloc в рамках анализа ESP_W или нет
+pipesim_modeling_P_dis_OIL_status = False # проводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: нефть - ESP_O) или нет
+unifloc_modeling_P_dis_OIL_status = True # проводим ли расчет модели Unifloc в рамках анализа ESP_O или нет
 
 results_data = defaultdict(lambda: defaultdict(dict)) # создаем многоуровневый словарь для хранения результатов расчета
 
 resuts_key_fluid_analysis = "Fluid_Analysis" # Ключ для расчетных значений в рамках FA
+resuts_key_p_dis_water = "P_dis_water_case" # Ключ для расчетных значений в рамках анализа расчета перепада давления, создаваемым ЭЦН, при прокачке воды
+resuts_key_p_dis_oil = "P_dis_oil_case" # Ключ для расчетных значений в рамках анализа расчета перепада давления, создаваемым ЭЦН, при прокачке ГЖС
 
 results_key_pipesim = "PIPESIM" # Ключ, который характерезует данные, как рассчитанные в PIPESIM 
 results_key_unifloc = "Unifloc" # Ключ, который характерезует данные, как рассчитанные в Unifloc
@@ -67,6 +85,7 @@ temperature_key_C = "temperature_C"
 solution_gas_key_m3m3 = "solution_gas_C"
 fvf_key = "formation_volume_factor"
 density_key_kg_m3 = "denstiy_kg_m3"
+liquid_flowrate_key_sm3_day = "liquid_flowrate_sm3_day"
 
 empty_key = "Empty"
 empty_value = "Empty"
@@ -78,9 +97,9 @@ empty_value = "Empty"
 
 if pipesim_modeling_FA_status == True:
     print("--"*40)
-    print("Комментарии ниже относятся расчетной части PIPESIM.")
+    print("Комментарии ниже относятся к расчетной части PIPESIM.")
     
-    # Open the model
+    # Открытие модели
     model = Model.open(MODEL_PATH, Units.METRIC)
     model.close()
     model = Model.open(MODEL_PATH, units=Units.METRIC)
@@ -108,7 +127,6 @@ if pipesim_modeling_FA_status == True:
     )
 
     print("--"*40)
-    # print(results-profile)
 
     pressure_data_pipesim_FA = results.profile[next(iter(results.profile.keys()))][ProfileVariables.PRESSURE] # bara
     viscosity_data_pipesim_FA = results.profile[next(iter(results.profile.keys()))][ProfileVariables.VISCOSITY_OIL_INSITU] # cP
@@ -137,7 +155,7 @@ else:
            Рассчетные значения не были выгружены.")
     
 # ----------------------------------------------------------------------------------
-# Моделирование в Unifloc VBA / Modeling in Unifloc VBA
+# Моделирование в Unifloc VBA в рамках FA / Modeling in Unifloc VBA
 # ----------------------------------------------------------------------------------
 
 if unifloc_modeling_FA_status == True:
@@ -187,7 +205,157 @@ else:
 
     print("Расчет модели Unifloc в рамках аназила свойств флюида не был выполнен. \
            Рассчетные значения не были выгружены.")
-    
+
+
+# ----------------------------------------------------------------------------------
+# Моделирование расчета Discharge Pressure в PIPESIM / 
+# ----------------------------------------------------------------------------------
+if pipesim_modeling_P_dis_WATER_status == True:
+    print("--"*40)
+    print("Комментарии ниже относятся к расчетной части PIPESIM.")
+    # Откроем модель PIPESIM
+    pipesim_model = Model.open(PIPESIM_ESP_P_DIS_WATER_MODEL_PATH, Units.METRIC)
+    print(pipesim_model.about())
+
+    # Список переменных профиля для PIPESIM
+    pipesim_profile_variables = [
+        ProfileVariables.TEMPERATURE,
+        ProfileVariables.PRESSURE,
+        ProfileVariables.ELEVATION,
+        ProfileVariables.TOTAL_DISTANCE,
+    ]
+
+    # Диапазон расхода жидкости
+    pipesim_liquid_flowrates = list(range(5, 300, 20))
+
+    # Список для хранения значений давления на выходе
+    pipesim_p_dis_values = []
+
+    # Рассчет давлений
+    for liquid_flow_rate in pipesim_liquid_flowrates:
+        parameters = {
+            Parameters.PTProfileSimulation.INLETPRESSURE: 151.9875,  # 150 (atma) from Unifloc converted to (bara) in PIPESIM
+            Parameters.PTProfileSimulation.LIQUIDFLOWRATE: liquid_flow_rate,
+            Parameters.PTProfileSimulation.FLOWRATETYPE: Constants.FlowRateType.LIQUIDFLOWRATE,
+            Parameters.PTProfileSimulation.CALCULATEDVARIABLE: Constants.CalculatedVariable.OUTLETPRESSURE,
+        }
+
+        # Запуск симуляции и получение результатов
+        print("Running PT profile simulation in PIPESIM")
+        results = pipesim_model.tasks.ptprofilesimulation.run(
+            producer="Well",
+            parameters=parameters,
+            profile_variables=pipesim_profile_variables
+        )
+
+        # Получение значения давления на выходе из профиля (результата расчета)
+        for case, profile in results.profile.items():
+            profile_df = pd.DataFrame.from_dict(profile)
+            pressure = profile_df[profile_df["BranchEquipment"] == 'Esp1']["Pressure"].iloc[0]*0.986923 # converted to (atma)
+
+        # Добавление давление в созданный ранее лист
+        pipesim_p_dis_values.append(pressure)
+
+    print("--"*40)
+
+    results_data[resuts_key_p_dis_water][results_key_pipesim][pressure_key_atma] = pipesim_p_dis_values
+    results_data[resuts_key_p_dis_water][results_key_pipesim][liquid_flowrate_key_sm3_day] = pipesim_liquid_flowrates
+
+    print(f"Результаты расчета давления на выходе ЭЦН (флюид - вода) в PIPESIM выгружены в '{results_file_name}' в папке '{results_folder_name}'.")
+
+    # Закрытие модели PIPESIM
+    pipesim_model.close()
+
+else:
+    results_data[resuts_key_p_dis_water][results_key_pipesim][empty_key] = empty_value
+    print("Расчет модели PIPESIM рамках расчета давления на выходе из ЭЦН (флюид - вода) не был выполнен. \
+           Рассчетные значения не были выгружены.")
+
+if unifloc_modeling_P_dis_WATER_status == True:
+    # Диапазон расхода жидкости для Source 2 (Unifloc)
+    try:
+        unifloc_liquid_flowrates = pipesim_liquid_flowrates.copy()
+        print("Список значений расходов взят такой же как и при расчете в PIPESIM, используем его за основу при расчетах в рамках кейса ESP_W.")
+    except NameError:
+        print("Список значений для расходов из PIPESIM отсутсвует. Создаем произвольный список 5-300 с шагом 20.")
+        unifloc_liquid_flowrates = list(range(5, 300, 20))
+
+    # Параметры PVT для модели ЭЦН
+    gamma_gas_value = 0.6
+    gamma_oil_value = 0.86
+    gamma_wat_value = 1.02
+    rsb_m3m3_value = 120
+    pb_atma_value = 130
+    t_res_C_value = 80
+    bob_m3m3_value = 1.2
+    muob_cP_value = 0.6
+    PVT_corr_set_value = 0
+
+    # Создание модели ЭЦН с использованием Unifloc
+    esp_params = unf.encode_ESP_pump(
+        q_nom_sm3day=120,
+        head_nom_m=2000,
+        freq_nom_Hz=50,
+        num_stages=10,
+        calibr_head=1,
+        calibr_rate=1,
+        calibr_power=1,
+        gas_correct_model=1,
+        gas_correct_stage_by_stage=0,
+        dnum_stages_integrate=1
+    )
+
+    # Рассчет давления p_dis для Unifloc
+    unifloc_p_dis_values = []
+
+    for q_liq_value in unifloc_liquid_flowrates:
+        # Создание PVT_ESP с использованием заданных параметров
+        PVT_ESP = unf.encode_PVT(
+            gamma_gas=gamma_gas_value,
+            gamma_oil=gamma_oil_value,
+            gamma_wat=gamma_wat_value,
+            rsb_m3m3=rsb_m3m3_value,
+            pb_atma=pb_atma_value,
+            t_res_C=t_res_C_value,
+            bob_m3m3=bob_m3m3_value,
+            muob_cP=muob_cP_value,
+            PVT_corr_set=PVT_corr_set_value
+        )
+
+        # Создание feed_esp для расчета p_dis
+        feed_esp = unf.encode_feed(
+            q_liq_sm3day=q_liq_value,
+            fw_perc=100,  # Процентная вода
+            rp_m3m3=120,
+            q_gas_free_sm3day=0,
+            fluid=PVT_ESP
+        )
+
+        # Расчет p_dis с использованием модели ЭЦН из Unifloc
+        p_dis = unf.ESP_p_atma(
+            p_calc_atma=150,  # Расчетное давление
+            t_intake_C=80,    # Температура на входе
+            t_dis_C=80,       # Температура на выходе
+            feed=feed_esp,
+            esp_json=esp_params,
+            freq_Hz=48.5,
+            calc_along_flow=1,
+            param=1,
+            h_mes_top=2000
+        )
+
+        # Добавление рассчитанного значения p_dis в список
+        unifloc_p_dis_values.append(p_dis)
+
+    results_data[resuts_key_p_dis_water][results_key_unifloc][pressure_key_atma] = unifloc_p_dis_values
+    results_data[resuts_key_p_dis_water][results_key_unifloc][liquid_flowrate_key_sm3_day] = unifloc_liquid_flowrates
+
+    print(f"Результаты расчета давления на выходе ЭЦН (флюид - вода) в Unifloc выгружены в '{results_file_name}' в папке '{results_folder_name}'.")
+else:
+    results_data[resuts_key_p_dis_water][results_key_unifloc][empty_key] = empty_value
+    print("Расчет модели Unifloc рамках расчета давления на выходе из ЭЦН (флюид - вода) не был выполнен. \
+           Рассчетные значения не были выгружены.")
+
 with open(results_file_path, "w") as json_file:
     json.dump(results_data, json_file, indent=3)
 
