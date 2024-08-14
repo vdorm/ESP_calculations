@@ -65,7 +65,7 @@ pipesim_modeling_FA_status = True # проводим ли расчет моде�
 unifloc_modeling_FA_status = True # проводим ли расчет модели Unifloc в рамках FA или нет
 pipesim_modeling_P_dis_WATER_status = True # проводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: вода - ESP_W) или нет
 unifloc_modeling_P_dis_WATER_status = True # проводим ли расчет модели Unifloc в рамках анализа ESP_W или нет
-pipesim_modeling_P_dis_OIL_status = False # проводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: нефть - ESP_O) или нет
+pipesim_modeling_P_dis_OIL_status = True # проводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: нефть - ESP_O) или нет
 unifloc_modeling_P_dis_OIL_status = True # проводим ли расчет модели Unifloc в рамках анализа ESP_O или нет
 
 results_data = defaultdict(lambda: defaultdict(dict)) # создаем многоуровневый словарь для хранения результатов расчета
@@ -86,6 +86,8 @@ solution_gas_key_m3m3 = "solution_gas_C"
 fvf_key = "formation_volume_factor"
 density_key_kg_m3 = "denstiy_kg_m3"
 liquid_flowrate_key_sm3_day = "liquid_flowrate_sm3_day"
+
+p_dis_oil_key = "Pdis_vs_Q_by_GOR" # ключ для задания зависимости Pdis vs Qliq для разных значения GOR, используется для расчетов в рамках анализа ESP_O
 
 empty_key = "Empty"
 empty_value = "Empty"
@@ -208,7 +210,7 @@ else:
 
 
 # ----------------------------------------------------------------------------------
-# Моделирование расчета Discharge Pressure в PIPESIM / 
+# Моделирование расчета Discharge Pressure в PIPESIM (флюид - вода) / 
 # ----------------------------------------------------------------------------------
 if pipesim_modeling_P_dis_WATER_status == True:
     print("--"*40)
@@ -356,6 +358,207 @@ else:
     print("Расчет модели Unifloc рамках расчета давления на выходе из ЭЦН (флюид - вода) не был выполнен. \
            Рассчетные значения не были выгружены.")
 
+
+# ----------------------------------------------------------------------------------
+# Моделирование расчета Discharge Pressure в PIPESIM (флюид - нефть) / 
+# ----------------------------------------------------------------------------------
+
+# PIPESIM
+# gor_values_source1 = list(range(50, 150, 25))
+# gor_values_pipesim = [150]
+gor_values_pipesim = list(range(50, 150, 25))
+liquid_flow_rates_pipesim = list(range(5, 300, 20))
+# Unifloc
+rp_values_unifloc = gor_values_pipesim.copy()
+liquid_flow_rates_unifloc = liquid_flow_rates_pipesim.copy()
+
+if pipesim_modeling_P_dis_OIL_status:
+    # PIPESIM
+    pressure_values_dict_source1 = {}
+
+    print("--"*40)
+    print("Комментарии ниже относятся к расчетной части PIPESIM.")
+    # Откроем модель PIPESIM
+    model = Model.open(PIPESIM_MODEL_PATH_ESP_P_DIS_OIL_BASE, Units.METRIC)
+    # print(pipesim_model.about())
+
+    profile_variables = [
+        ProfileVariables.TEMPERATURE,
+        ProfileVariables.PRESSURE,
+        ProfileVariables.ELEVATION,
+        ProfileVariables.TOTAL_DISTANCE,
+    ]
+
+    gor_Pdis_Q_pipesim = defaultdict(dict)
+
+    # Create pairs of plots for each GOR value from both sources
+    for gor_source1 in gor_values_pipesim:
+        p_dis_values_pipesim = []  # List to store pressure values
+        
+        # Source 1 (PIPESIM)
+        model.set_value(
+            context="Oil_ESP",
+            parameter=Parameters.BlackOilFluid.GOR,
+            value=gor_source1
+        )
+
+        # random_color = random.choice(all_colors)
+        # model.save(MODEL_FOLDER_PATH_ESP_P_DIS_OIL + "\ESP_GOR_" + str(gor_source1) + ".pips")
+        
+        for liquid_flow_rate in liquid_flow_rates_pipesim:
+            parameters = {
+                Parameters.PTProfileSimulation.INLETPRESSURE: 151.9875,  # 150 (atma) Unifloc converted to (bara) PIPESIM
+                Parameters.PTProfileSimulation.LIQUIDFLOWRATE: liquid_flow_rate,
+                Parameters.PTProfileSimulation.FLOWRATETYPE: Constants.FlowRateType.LIQUIDFLOWRATE,
+                Parameters.PTProfileSimulation.CALCULATEDVARIABLE: Constants.CalculatedVariable.OUTLETPRESSURE,
+            }
+
+            # Run the simulation and print out the results
+            print("Running PT profile simulation")
+            results = model.tasks.ptprofilesimulation.run(producer="Well",
+                                                        parameters=parameters,
+                                                        profile_variables=profile_variables)
+
+            # Profile results
+            for case, profile in results.profile.items():
+                profile_df = pd.DataFrame.from_dict(profile)
+                pressure = profile_df[profile_df["BranchEquipment"] == 'Esp1']["Pressure"].iloc[0] * 0.986923 # converted to (atma)
+                print("Pressure: ", pressure)
+
+            # Append pressure value to the list
+            p_dis_values_pipesim.append(pressure)
+
+        # TO DO: изменить способ хранения резульаттов для разных GOR
+        gor_Pdis_Q_pipesim[gor_source1][pressure_key_atma] = p_dis_values_pipesim
+        gor_Pdis_Q_pipesim[gor_source1][liquid_flowrate_key_sm3_day] = liquid_flow_rates_pipesim
+
+    print("--"*40)
+
+    results_data[resuts_key_p_dis_oil][results_key_pipesim][p_dis_oil_key] = gor_Pdis_Q_pipesim
+
+    print(f"Результаты расчета давления на выходе ЭЦН (флюид - нефть) в PIPESIM выгружены в '{results_file_name}' в папке '{results_folder_name}'.")
+
+    # Закрываем модель PIPESIM
+    model.close()
+else:
+    pass
+
+if unifloc_modeling_P_dis_OIL_status == True:
+
+    gor_Pdis_Q_unifloc = defaultdict(dict)
+    
+    # PVT parameters for ESP model
+    gamma_gas_value = 0.6
+    gamma_oil_value = 0.86
+    gamma_wat_value = 1.1
+    rsb_m3m3_value = 120
+    pb_atma_value = 130
+    t_res_C_value = 80
+    bob_m3m3_value = 1.2
+    muob_cP_value = 0.6
+    PVT_corr_set_value = 0
+
+    # Fluid flow parameters
+    q_liq_sm3day_value = 50
+    fw_perc_value = 0
+    rp_m3m3_value = None
+    q_gas_free_sm3day_value = 0
+
+    # ESP parameters
+    ESP_q_nom_value = 120
+    ESP_head_nom_value = 2000
+    freq_nom_value = 48.5
+    num_stages_value = 10
+    calibr_head_value = 1
+    calibr_rate_value = 1
+    calibr_power_value = 1 
+    gas_correct_model_value = 1 
+    gas_correct_stage_by_stage_value = 0
+    dnum_stages_integrate_value = 1
+
+    # Parameters for calculating p_dis
+    p_calc_atma_value = 150
+    t_intake_C_value = 80
+    t_dis_C_value = 80
+    freq_Hz_value = 50
+    calc_along_flow_value = 1
+    param_value = 1
+    h_mes_top_value = 2000
+
+    # Encode ESP pump
+    esp = unf.encode_ESP_pump(
+        q_nom_sm3day=ESP_q_nom_value,
+        head_nom_m=ESP_head_nom_value,
+        freq_nom_Hz=freq_nom_value,
+        num_stages=num_stages_value,
+        calibr_head=calibr_head_value,
+        calibr_rate=calibr_rate_value,
+        calibr_power=calibr_power_value,
+        gas_correct_model=gas_correct_model_value,
+        gas_correct_stage_by_stage=gas_correct_stage_by_stage_value,
+        dnum_stages_integrate=dnum_stages_integrate_value
+    )
+
+    for gor_source2 in rp_values_unifloc:
+        print(gor_source2)
+        p_dis_values_unifloc = []
+
+        # Calculate p_dis values for Source 2
+        for q_liq_value in liquid_flow_rates_unifloc:
+            
+            # Create PVT_ESP using specified parameters
+            PVT_ESP = unf.encode_PVT(
+                gamma_gas=gamma_gas_value,
+                gamma_oil=gamma_oil_value,
+                gamma_wat=gamma_wat_value,
+                rsb_m3m3=rsb_m3m3_value,
+                pb_atma=pb_atma_value,
+                t_res_C=t_res_C_value,
+                bob_m3m3=bob_m3m3_value,
+                muob_cP=muob_cP_value,
+                PVT_corr_set=PVT_corr_set_value
+            )
+            
+            feed_esp = unf.encode_feed(
+                q_liq_sm3day=q_liq_value,
+                fw_perc=fw_perc_value,
+                rp_m3m3=gor_source2,
+                q_gas_free_sm3day=q_gas_free_sm3day_value,
+                fluid=PVT_ESP
+            )
+
+            p_dis = unf.ESP_p_atma(
+                p_calc_atma=p_calc_atma_value,
+                t_intake_C=t_intake_C_value,
+                t_dis_C=t_dis_C_value,
+                feed=feed_esp,
+                esp_json=esp,
+                freq_Hz=freq_Hz_value,
+                calc_along_flow=calc_along_flow_value,
+                param=param_value,
+                h_mes_top=h_mes_top_value
+            )
+            
+            p_dis_values_unifloc.append(p_dis)
+
+        # TO DO: изменить способ хранения резульаттов для разных GOR
+        
+        gor_Pdis_Q_unifloc[gor_source2][pressure_key_atma] = p_dis_values_unifloc
+        gor_Pdis_Q_unifloc[gor_source2][liquid_flowrate_key_sm3_day] = liquid_flow_rates_unifloc
+
+    results_data[resuts_key_p_dis_oil][results_key_unifloc][p_dis_oil_key] = gor_Pdis_Q_unifloc
+
+    print(f"Результаты расчета давления на выходе ЭЦН (флюид - нефть) в Unifloc выгружены в '{results_file_name}' в папке '{results_folder_name}'.")
+else:
+    pass
+# --------------------
+# --------------------
+
+
+
 with open(results_file_path, "w") as json_file:
     json.dump(results_data, json_file, indent=3)
+
+
+# TO DO: объединить расчет с созданием моделей, т к нужно брать параметры из одного места
 
