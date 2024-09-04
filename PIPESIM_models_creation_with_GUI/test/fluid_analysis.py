@@ -65,11 +65,11 @@ pipesim_modeling_FA_status = False # проводим ли расчет моде
 unifloc_modeling_FA_status = False # проводим ли расчет модели Unifloc в рамках FA или нет
 pipesim_modeling_P_dis_WATER_status = False # проводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: вода - ESP_W) или нет
 unifloc_modeling_P_dis_WATER_status = False # проводим ли расчет модели Unifloc в рамках анализа ESP_W или нет
-pipesim_modeling_P_dis_OIL_status = False # проводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: нефть - ESP_O) или нет
+pipesim_modeling_P_dis_OIL_status = True # проводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: нефть - ESP_O) или нет
                                           # в этом расчете резльтаты PIP сравниваются с Unifloc на одном графике
-unifloc_modeling_P_dis_OIL_status = False # проводим ли расчет модели Unifloc в рамках анализа ESP_O или нет; 
+unifloc_modeling_P_dis_OIL_status = True # проводим ли расчет модели Unifloc в рамках анализа ESP_O или нет; 
                                           # в этом расчете резльтаты PIP сравниваются с Unifloc на одном графике
-pipesim_modeling_P_dis_OIL_dif_GOR_status = False # роводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: нефть - ESP_O) или нет
+pipesim_modeling_P_dis_OIL_dif_GOR_status = True # роводим ли расчет модели PIPESIM в рамках анализа работы ЭЦН (флюид: нефть - ESP_O) или нет
                                                   # в этом расчете анализируем влияние GOR на НРХ только для модели PIP
 unifloc_modeling_P_dis_OIL_dif_GOR_status = True # проводим ли расчет модели Unifloc в рамках анализа ESP_O или нет
                                                   # в этом расчете анализируем влияние GOR на НРХ только для модели Unifloc
@@ -372,7 +372,7 @@ else:
 # Результаты будут сравнены с Unifloc на одном грвфике. /
 # ----------------------------------------------------------------------------------
 
-# PIPESIM
+# PIPESIM   
 # gor_values_pipesim = [150]
 gor_values_pipesim = list(range(50, 150, 25))
 liquid_flow_rates_pipesim = list(range(5, 300, 20))
@@ -457,7 +457,7 @@ else:
 
 # ----------------------------------------------------------------------------------
 # Моделирование расчета Discharge Pressure в Unifloc (флюид - нефть). 
-# Результаты будут сравнены с PIPESIM на одном грвфике. / 
+# Результаты будут сравнены с PIPESIM на одном графике. / 
 # ----------------------------------------------------------------------------------
 if unifloc_modeling_P_dis_OIL_status:
 
