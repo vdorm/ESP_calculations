@@ -1,0 +1,87 @@
+/* Меняем название для фигур на русский */
+/*.caption-number { /*
+/*    font-weight: bold; /*
+/*} /*
+
+/*.caption-text { /*
+/*    font-style: italic; /*
+/*} /*
+
+/*.caption-text:before { /*
+/*    content: "Рис. "; /* Изменяем "Fig." на "Рис." */
+/*} /*
+
+
+/* Добавление рамки вокруг изображения */
+figure img {
+    border: 1px solid black; /* Черная рамка толщиной 2px */
+    padding: 1px;  /* Отступы внутри рамки */
+    margin-bottom: 0px; /* Отступ снизу изображения */
+}
+
+/* figure { /*
+/*    margin-top: 10px; /*
+/*} /*
+
+/* Добавление отступа только для первой строки обычного текста */
+
+/* Устанавливаем отступ между подписью и изображением */
+figure figcaption {
+    margin-bottom: -20px; /* Отступ между подписью и следующим абзацем */
+}
+
+p {
+    text-indent: 1.25cm; /* отступ первой строки для обычного текста */
+}
+
+/* Исключаем отступ для формул */
+p span.math {
+    text-indent: 0;  /* Убираем отступ для формул */
+}
+
+p {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 5px;  /* Отступ между абзацами */
+}
+
+/* Для заголовков всех уровней h1, h2, h3 и т.д. */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: bold !important;  /* Сделать текст жирным с приоритетом */
+    font-size: 14px; /* Размер текста */
+    line-height: 1.5;   /* Установить межстрочный интервал 1.5 */
+	margin-top: 100px;  /* Устанавливаем отступ сверху */
+}
+
+
+code {
+    font-size: 12px; /* Размер шрифта для строчных фрагментов кода */
+}
+
+pre {
+    font-size: 12px; /* Размер шрифта для многострочных блоков кода */
+}
+
+div.prev-next-info:nth-child(2) > p:nth-child(2) {
+    font-size: 14px; /* Размер шрифта */
+    color: grey; /* Цвет текста — серый */
+    font-weight: normal; /* Убираем жирный шрифт */
+    border: 1px solid grey; /* Серая обводка */
+    padding: 10px; /* Отступы внутри */
+    border-radius: 5px; /* Скругленные углы */
+}
+
+
+div.prev-next-info:nth-child(1) > p:nth-child(2) {
+    font-size: 14px; /* Размер шрифта */
+    color: grey; /* Цвет текста — серый */
+    font-weight: normal; /* Убираем жирный шрифт */
+    border: 1px solid grey; /* Серая обводка */
+    padding: 10px; /* Отступы внутри */
+    border-radius: 5px; /* Скругленные углы */
+}
+
+img.logo__image:nth-child(1) {
+    width: 100px; /* Устанавливаем ширину логотипа */
+    height: auto; /* Сохраняем пропорции изображения */
+}

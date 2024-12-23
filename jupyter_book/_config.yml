@@ -1,0 +1,65 @@
+# Book settings
+# Learn more at https://jupyterbook.org/customize/config.html
+
+title: ESP Analysis
+author: PROD BY ...
+logo: images/gubkin_logo.jpg
+copyright: "2024"
+
+# Force re-execution of notebooks on each build.
+# See https://jupyterbook.org/content/execute.html
+execute:
+  execute_notebooks: force
+
+# Define the name of the latex output file for PDF builds
+latex:
+  latex_documents:
+    targetname: book.tex
+
+# Add a bibtex file so that we can create citations
+bibtex_bibfiles:
+  - references.bib
+
+# Information about where the book exists on the web
+repository:
+  url: https://github.com/executablebooks/jupyter-book  # Online location of your book
+  path_to_book: docs  # Optional path to your book, relative to the repository root
+  branch: master  # Which branch of the repository should be used when creating links (optional)
+
+# Add GitHub buttons to your book
+# See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: false
+  use_repository_button: false
+  navbar_number_sections: false   # Add a number to each section in your left navbar
+  home_page_in_navbar: false  # Whether to include your home page in the left Navigation Bar
+  # extra_navbar              : Powered by <a href="https://jupyterbook.org">Jupyter Book</a>  # Will be displayed underneath the left navbar.
+  # extra_footer              : "HAHHAHAHAH"  # Will be displayed underneath the footer.
+  # theme:
+  #   name: "sphinx_book_theme"
+  #   options:
+  #     templates_path: ["_templates"]
+  extra_css:
+    - _static/custom.css
+  extra_js:
+    - _static/custom.js
+#   theme:
+#     name: "sphinx_book_theme"
+#     options:
+#       locale: "ru"
+
+# # locale:
+# #   figure = "Рис."
+
+latex:
+  latex_engine: xelatex  # Используем xelatex для поддержки шрифтов и Unicode
+  latex_documents:
+    targetname: book.tex  # Имя выходного файла LaTeX
+    title: "Моя книга"  # Заголовок
+    author: "Автор"  # Автор
+  extra_template: "latex_custom.tex"
+
+pdf:
+  use_latex: true  # Включить использование LaTeX для создания PDF
+  latex_engine: xelatex
+  targetname: my_book.pdf  # Имя выходного PDF файла

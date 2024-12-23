@@ -1,0 +1,50 @@
+# # Table of contents
+# # Learn more at https://jupyterbook.org/customize/toc.html
+
+# format: jb-book
+# root: markdown
+# chapters:
+# - file: notebooks  # Ваш блокнот с кодом
+# # - file: markdown
+# - file: plot_example
+
+
+# - file: 
+# - header: Intro
+
+# - header: Часть 1
+# - file: markdown
+
+# - header: Часть 2
+# - file: notebooks
+
+# _toc.yml
+format: jb-book
+root: Example
+title: "Пример"
+
+chapters:
+  - file: chapters/0_Annotation.md
+    title: "Аннотация"
+  - file: chapters/1_Introduction.md
+    title: "Введение."
+  - file: chapters/2_Materials_and_methods.md
+    title: "Материалы и методы"
+  - file: chapters/3_Results
+    title: "Резульаты."
+  - file: chapters/4_Discussion_of_the_results.md
+    title: "Обсуждение результатов."
+  - file: chapters/5_Conclusions.md
+    title: "Выводы."
+
+  
+# - file: intro
+# - header: Schedule
+# - file: markdown.md
+#   title: "Day 1: Getting Started"
+# - file: notebooks.ipynb
+#   title: "Day 2: Pedagogy and Assessment"
+# # - file: schedule/day3.md
+# #   title: "Day 3: New Developments"
+# # - file: schedule/speakers.md
+

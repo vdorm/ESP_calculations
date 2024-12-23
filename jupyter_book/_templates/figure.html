@@ -1,0 +1,6 @@
+{% set fig_number = figure.number %}
+<figure>
+    <img src="{{ figure.src }}" alt="{{ figure.alt }}" style="height: {{ figure.height }};">
+    <figcaption>{{ figure.caption }}</figcaption>
+    <p class="figure-number">Рис. {{ fig_number }}</p>
+</figure>
